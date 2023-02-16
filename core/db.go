@@ -24,7 +24,7 @@ func GetDatabaseConnection() *mongo.Database {
 			log.Fatal("La conexion a la base de datos no responde")
 		}
 
-		databaseConnection = conn.Database("pasteleria")
+		databaseConnection = conn.Database("arquitectura")
 	}
 
 	return databaseConnection

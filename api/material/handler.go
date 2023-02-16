@@ -57,32 +57,32 @@ func (h *handler) ChangeMaterialPrice(w http.ResponseWriter, r *http.Request) {
 func (h *handler) GetMaterialRoutes() core.Routes {
 	return core.Routes{
 		core.Route{
-			Path:        "/ingredients",
+			Path:        "/materials",
 			HandlerFunc: h.GetAllMaterials,
 			Method:      "GET",
 		},
 		core.Route{
-			Path:        "/ingredients",
+			Path:        "/materials",
 			HandlerFunc: h.CreateMaterial,
 			Method:      "POST",
 		},
 		core.Route{
-			Path:        "/ingredients/{id}",
+			Path:        "/materials/{id}",
 			HandlerFunc: h.UpdateMaterial,
 			Method:      "PUT",
 		},
 		core.Route{
-			Path:        "/ingredients/{id}/price",
+			Path:        "/materials/{id}/price",
 			HandlerFunc: h.ChangeMaterialPrice,
 			Method:      "PUT",
 		},
 		core.Route{
-			Path:        "/ingredients/{id}",
+			Path:        "/materials/{id}",
 			HandlerFunc: h.DeleteMaterial,
 			Method:      "DELETE",
 		},
 		core.Route{
-			Path:        "/ingredients/{ingredientId}/recipes/{recipeId}",
+			Path:        "/materials/{ingredientId}/budgets/{recipeId}",
 			HandlerFunc: h.AddMaterialToBudget,
 			Method:      "PUT",
 		},
