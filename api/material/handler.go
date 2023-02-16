@@ -82,7 +82,7 @@ func (h *handler) GetMaterialRoutes() core.Routes {
 			Method:      "DELETE",
 		},
 		core.Route{
-			Path:        "/materials/{ingredientId}/budgets/{recipeId}",
+			Path:        "/materials/{materialId}/budgets/{budgetId}",
 			HandlerFunc: h.AddMaterialToBudget,
 			Method:      "PUT",
 		},

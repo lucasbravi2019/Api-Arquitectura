@@ -19,7 +19,7 @@ func GetMaterialById(oid primitive.ObjectID) bson.M {
 
 func GetMaterialByDimensionId(packageId primitive.ObjectID) bson.M {
 	return bson.M{
-		"packages._id": packageId,
+		"dimensions._id": packageId,
 	}
 }
 
@@ -41,8 +41,8 @@ func GetAggregateCreateMaterials(ingredient *MaterialNameDTO) mongo.Pipeline {
 	return mongo.Pipeline{project, match}
 }
 
-func GetMaterialWithoutExistingDimension(ingredientOid primitive.ObjectID, packageOid primitive.ObjectID) bson.D {
-	return bson.D{{"_id", ingredientOid}, {"packages._id", bson.D{{"$ne", packageOid}}}}
+func GetMaterialWithoutExistingDimension(materialId primitive.ObjectID, dimensionId primitive.ObjectID) bson.D {
+	return bson.D{{"_id", materialId}, {"dimensions._id", bson.D{{"$ne", dimensionId}}}}
 }
 
 func UpdateMaterialName(dto MaterialNameDTO) bson.M {
@@ -51,18 +51,18 @@ func UpdateMaterialName(dto MaterialNameDTO) bson.M {
 
 func PushDimensionIntoMaterial(envase MaterialDimension) bson.M {
 	return bson.M{"$addToSet": bson.M{
-		"packages": envase,
+		"dimensions": envase,
 	}}
 }
 
 func PullDimensionFromMaterials(dimension MaterialDimensionDTO) bson.M {
-	return bson.M{"$pull": bson.M{"packages": bson.M{"_id": dimension.DimensionOid}}}
+	return bson.M{"$pull": bson.M{"dimensions": bson.M{"_id": dimension.DimensionOid}}}
 }
 
 func SetMaterialPrice(price float64) bson.M {
 	return bson.M{
 		"$set": bson.M{
-			"packages.$[package].price": price,
+			"dimensions.$[dimension].price": price,
 		},
 	}
 }
@@ -71,7 +71,7 @@ func GetArrayFilterForPackageId(oid primitive.ObjectID) *options.UpdateOptions {
 	return options.Update().SetArrayFilters(options.ArrayFilters{
 		Filters: []interface{}{
 			bson.M{
-				"package._id": oid,
+				"dimension._id": oid,
 			},
 		},
 	})

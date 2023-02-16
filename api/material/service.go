@@ -111,54 +111,54 @@ func (s *service) DeleteMaterial(r *http.Request) (int, *primitive.ObjectID) {
 
 func (s *service) AddMaterialToBudget(r *http.Request) int {
 	budgetId := core.ConvertHexToObjectId(mux.Vars(r)["budgetId"])
-	MaterialOid := core.ConvertHexToObjectId(mux.Vars(r)["materialId"])
+	materialId := core.ConvertHexToObjectId(mux.Vars(r)["materialId"])
 
-	if budgetId == nil || MaterialOid == nil {
+	if budgetId == nil || materialId == nil {
 		return http.StatusBadRequest
 	}
 
-	recipe := s.budgetRepository.FindBudgetByOID(budgetId)
+	budgetDTO := s.budgetRepository.FindBudgetByOID(budgetId)
 
-	if recipe == nil {
+	if budgetDTO == nil {
 		return http.StatusNotFound
 	}
 
-	MaterialDTO := s.materialRepository.FindMaterialByOID(MaterialOid)
+	materialDTO := s.materialRepository.FindMaterialByOID(materialId)
 
-	if MaterialDTO == nil {
+	if materialDTO == nil {
 		return http.StatusNotFound
 	}
 
-	var MaterialDetails *MaterialDetailsDTO = &MaterialDetailsDTO{}
+	var materialDetails *MaterialDetailsDTO = &MaterialDetailsDTO{}
 
-	invalidBody := core.DecodeBody(r, MaterialDetails)
+	invalidBody := core.DecodeBody(r, materialDetails)
 
 	if invalidBody {
 		return http.StatusBadRequest
 	}
 
-	err := validate(MaterialDTO, MaterialDetails)
+	err := validate(materialDTO, materialDetails)
 
 	if err != nil {
 		return http.StatusBadRequest
 	}
 
-	envase := getMaterialPackage(MaterialDetails.Metric, MaterialDTO.Dimensions)
+	dimension := getMaterialDimension(materialDetails.Metric, materialDTO.Dimensions)
 
-	var recipeMaterial *budget.BudgetMaterial = &budget.BudgetMaterial{
+	var budgetMaterial *budget.BudgetMaterial = &budget.BudgetMaterial{
 		ID:       primitive.NewObjectID(),
-		Quantity: MaterialDetails.Quantity,
-		Name:     MaterialDTO.Name,
+		Quantity: materialDetails.Quantity,
+		Name:     materialDTO.Name,
 		Dimension: budget.BudgetMaterialDimension{
-			ID:       envase.ID,
-			Metric:   envase.Metric,
-			Quantity: envase.Quantity,
-			Price:    envase.Price,
+			ID:       dimension.ID,
+			Metric:   dimension.Metric,
+			Quantity: dimension.Quantity,
+			Price:    dimension.Price,
 		},
-		Price: float64(MaterialDetails.Quantity) / envase.Quantity * envase.Price,
+		Price: float64(materialDetails.Quantity) / dimension.Quantity * dimension.Price,
 	}
 
-	err = s.budgetRepository.AddMaterialToBudget(budgetId, recipeMaterial)
+	err = s.budgetRepository.AddMaterialToBudget(budgetId, budgetMaterial)
 
 	if err != nil {
 		return http.StatusInternalServerError
@@ -175,40 +175,40 @@ func (s *service) AddMaterialToBudget(r *http.Request) int {
 }
 
 func (s *service) ChangeMaterialPrice(r *http.Request) (int, *MaterialDTO) {
-	MaterialPackageId := mux.Vars(r)["id"]
-	MaterialPackageOid := core.ConvertHexToObjectId(MaterialPackageId)
+	materialDimensionId := mux.Vars(r)["id"]
+	materialDimensionOid := core.ConvertHexToObjectId(materialDimensionId)
 
-	if MaterialPackageOid == nil {
+	if materialDimensionOid == nil {
 		return http.StatusBadRequest, nil
 	}
 
-	var MaterialPackagePrice *MaterialDimensionPriceDTO = &MaterialDimensionPriceDTO{}
+	var materialDimensionPrice *MaterialDimensionPriceDTO = &MaterialDimensionPriceDTO{}
 
-	invalidBody := core.DecodeBody(r, MaterialPackagePrice)
+	invalidBody := core.DecodeBody(r, materialDimensionPrice)
 
 	if invalidBody {
 		return http.StatusBadRequest, nil
 	}
 
-	err := s.materialRepository.ChangeMaterialPrice(MaterialPackageOid, MaterialPackagePrice)
+	err := s.materialRepository.ChangeMaterialPrice(materialDimensionOid, materialDimensionPrice)
 
 	if err != nil {
 		return http.StatusInternalServerError, nil
 	}
 
-	MaterialUpdated := s.materialRepository.FindMaterialByPackageId(MaterialPackageOid)
+	materialUpdated := s.materialRepository.FindMaterialByPackageId(materialDimensionOid)
 
-	if MaterialUpdated == nil {
+	if materialUpdated == nil {
 		return http.StatusInternalServerError, nil
 	}
 
-	budget := s.budgetRepository.FindBudgetsByDimensionId(MaterialPackageOid)
+	budget := s.budgetRepository.FindBudgetsByDimensionId(materialDimensionOid)
 
 	if len(budget) == 0 {
-		return http.StatusOK, MaterialUpdated
+		return http.StatusOK, materialUpdated
 	}
 
-	err = s.budgetRepository.UpdateMaterialDimensionPrice(MaterialPackageOid, MaterialPackagePrice.Price)
+	err = s.budgetRepository.UpdateMaterialDimensionPrice(materialDimensionOid, materialDimensionPrice.Price)
 
 	if err != nil {
 		return http.StatusInternalServerError, nil
@@ -222,14 +222,14 @@ func (s *service) ChangeMaterialPrice(r *http.Request) (int, *MaterialDTO) {
 		}
 		budget[i].Price = recipePrice * 3
 
-		err := s.budgetRepository.UpdateMaterialsPrice(MaterialPackageOid, budget[i])
+		err := s.budgetRepository.UpdateMaterialsPrice(materialDimensionOid, budget[i])
 
 		if err != nil {
 			log.Println(err.Error())
 		}
 	}
 
-	return http.StatusOK, MaterialUpdated
+	return http.StatusOK, materialUpdated
 }
 
 func validate(Material *MaterialDTO, MaterialDetails *MaterialDetailsDTO) error {
@@ -245,19 +245,19 @@ func validate(Material *MaterialDTO, MaterialDetails *MaterialDetailsDTO) error 
 	return nil
 }
 
-func MaterialMetricMatches(metric string, packages []DimensionDTO) bool {
-	for _, pack := range packages {
-		if fmt.Sprintf("%g %s", pack.Quantity, pack.Metric) == metric {
+func MaterialMetricMatches(metric string, dimensions []DimensionDTO) bool {
+	for _, dimension := range dimensions {
+		if fmt.Sprintf("%g %s", dimension.Quantity, dimension.Metric) == metric {
 			return true
 		}
 	}
 	return false
 }
 
-func getMaterialPackage(metric string, packages []DimensionDTO) *DimensionDTO {
-	for _, pack := range packages {
-		if fmt.Sprintf("%g %s", pack.Quantity, pack.Metric) == metric {
-			return &pack
+func getMaterialDimension(metric string, dimensions []DimensionDTO) *DimensionDTO {
+	for _, dimension := range dimensions {
+		if fmt.Sprintf("%g %s", dimension.Quantity, dimension.Metric) == metric {
+			return &dimension
 		}
 	}
 	return nil

@@ -19,7 +19,7 @@ func UpdateRecipeName(dto BudgetNameDTO) bson.M {
 }
 
 func AddIngredientToRecipe(budget BudgetMaterial) bson.M {
-	return bson.M{"$addToSet": bson.M{"ingredients": budget}}
+	return bson.M{"$addToSet": bson.M{"materials": budget}}
 }
 
 func RemoveMaterialFromBudget(budget BudgetMaterial) bson.M {
@@ -27,7 +27,7 @@ func RemoveMaterialFromBudget(budget BudgetMaterial) bson.M {
 }
 
 func SetBudgetPrice() bson.A {
-	return bson.A{bson.D{{"$set", bson.D{{"price", bson.D{{"$multiply", bson.A{bson.D{{"$sum", "$materials.price"}}, 3}}}}}}}}
+	return bson.A{bson.D{{"$set", bson.D{{"price", bson.D{{"$sum", "$materials.price"}}}}}}}
 }
 
 func SetMaterialDimensionPrice(price float64) bson.D {
@@ -55,5 +55,5 @@ func GetBudgetByMaterialId(materialId primitive.ObjectID) bson.M {
 }
 
 func RemoveDimensionFromBudget(dimensionId primitive.ObjectID) bson.M {
-	return bson.M{"$pull": bson.M{"ingredients": bson.M{"package._id": dimensionId}}}
+	return bson.M{"$pull": bson.M{"materials": bson.M{"dimension._id": dimensionId}}}
 }
